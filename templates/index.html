@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penyuluh Pertanian Digital</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+</head>
+<body>
+    <div id="chat-window">
+        <div id="chat-header">
+            <h1>Penyuluh Pertanian Digital 🌱</h1>
+            <p>Chatbot berbasis RAG dengan data paper pertanian Indonesia.</p>
+        </div>
+        <div id="chat-messages">
+            <div class="message bot-message">
+                <p>Halo! Saya siap membantu Anda. Apa yang ingin Anda ketahui?</p>
+            </div>
+        </div>
+        <div id="chat-input-container">
+            <form id="chat-form">
+                <input type="text" id="user-input" placeholder="Ketik pertanyaan Anda di sini..." autocomplete="off">
+                <button type="submit">Kirim</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const chatForm = document.getElementById('chat-form');
+        const userInput = document.getElementById('user-input');
+        const chatMessages = document.getElementById('chat-messages');
+        let conversationHistory = [];
+
+        chatForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const userMessage = userInput.value.trim();
+            if (!userMessage) return;
+
+            addMessage(userMessage, 'user');
+            userInput.value = '';
+            const loadingIndicator = addMessage('...', 'bot', true);
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: userMessage, history: conversationHistory })
+                });
+
+                loadingIndicator.remove();
+
+                if (!response.ok) {
+                    addMessage('Maaf, terjadi error saat menghubungi server.', 'bot');
+                    return;
+                }
+
+                const data = await response.json();
+                const botReply = data.reply;
+                const sources = data.sources; // Ambil daftar sumber
+                
+                // Tampilkan jawaban bot, sekarang dengan sumber
+                addMessage(botReply, 'bot', false, sources);
+                conversationHistory.push({ user: userMessage, bot: botReply });
+
+            } catch (error) {
+                loadingIndicator.remove();
+                addMessage('Tidak dapat terhubung ke server.', 'bot');
+            }
+        });
+
+        function addMessage(text, sender, isLoading = false, sources = []) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', `${sender}-message`);
+
+            if (isLoading) {
+                messageElement.innerHTML = `<p>...</p>`;
+                messageElement.classList.add('loading');
+            } else if (sender === 'bot') {
+                const rawHtml = marked.parse(text);
+                const sanitizedHtml = DOMPurify.sanitize(rawHtml);
+                messageElement.innerHTML = sanitizedHtml;
+
+                // Jika ada sumber, tambahkan sebagai daftar tautan unduhan
+                if (sources && sources.length > 0) {
+                    const sourceContainer = document.createElement('div');
+                    sourceContainer.className = 'source-container';
+                    
+                    const sourceTitle = document.createElement('h4');
+                    sourceTitle.textContent = 'Sumber Dokumen:';
+                    sourceContainer.appendChild(sourceTitle);
+
+                    const sourceList = document.createElement('ul');
+                    sources.forEach(source => {
+                        const listItem = document.createElement('li');
+                        const link = document.createElement('a');
+                        link.href = `/download/${source.filename}`;
+                        link.textContent = source.title;
+                        link.target = '_blank'; // Buka di tab baru
+                        listItem.appendChild(link);
+                        sourceList.appendChild(listItem);
+                    });
+                    sourceContainer.appendChild(sourceList);
+                    messageElement.appendChild(sourceContainer);
+                }
+            } else {
+                const p = document.createElement('p');
+                p.textContent = text;
+                messageElement.appendChild(p);
+            }
+            
+            chatMessages.appendChild(messageElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return messageElement;
+        }
+    </script>
+</body>
+</html>
