@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Riwayat Pengaduan</title>
+</head>
+<body>
+    <h1>Riwayat Pengaduan Anda</h1>
+
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Pesan Pengaduan</th>
+                <th>Desa</th>
+                <th>Kecamatan</th>
+                <th>Status</th>
+                <th>Tanggal Pengajuan</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for complaint in complaints %}
+            <tr>
+                <td>{{ complaint.message }}</td>
+                <td>{{ complaint.village }}</td>
+                <td>{{ complaint.subdistrict }}</td>
+                <td>{{ complaint.status }}</td>
+                <td>{{ complaint.created_at }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5">Anda belum mengajukan pengaduan.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

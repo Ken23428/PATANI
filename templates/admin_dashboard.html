@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>📋 Dashboard Pengaduan Petani</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h2>📋 Dashboard Pengaduan Petani</h2>
+
+    <p><a href="{{ url_for('logout') }}">🔒 Logout</a></p>
+
+    {% if complaints %}
+        <table border="1" cellpadding="8" cellspacing="0">
+            <thead>
+                <tr>
+                    <th>Nama</th>
+                    <th>Desa</th>
+                    <th>Pesan</th>
+                    <th>Nomor HP</th>
+                    <th>Waktu</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in complaints %}
+                    <tr>
+                        <td>{{ c.user.name }}</td>
+                        <td>{{ c.village }}, Kec. {{ c.subdistrict }}, Kab. {{ c.regency }}</td>
+                        <td>{{ c.message }}</td>
+                        <td>{{ c.user.phone }}</td>
+                        <td>{{ c.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>{{ c.status }}</td>
+                        <td>
+                            <form method="POST" action="{{ url_for('update_complaint_status', complaint_id=c.id) }}">
+                                <select name="status">
+                                    <option value="pending" {% if c.status == 'pending' %}selected{% endif %}>Pending</option>
+                                    <option value="proses" {% if c.status == 'proses' %}selected{% endif %}>Proses</option>
+                                    <option value="selesai" {% if c.status == 'selesai' %}selected{% endif %}>Selesai</option>
+                                </select>
+                                <button type="submit">Update</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Tidak ada pengaduan masuk.</p>
+    {% endif %}
+</body>
+</html>

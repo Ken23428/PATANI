@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Form Pendaftaran Petani</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 40px; }
+        form {
+            background: #fff; padding: 25px; border-radius: 10px;
+            max-width: 500px; margin: auto; box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h2 { text-align: center; margin-bottom: 20px; }
+        label { display: block; margin-top: 15px; font-weight: bold; }
+        input, textarea, select {
+            width: 100%; padding: 10px; margin-top: 5px;
+            border: 1px solid #ccc; border-radius: 5px;
+        }
+        button {
+            width: 100%; padding: 12px; margin-top: 20px;
+            background-color: #2E7D32; color: white; border: none;
+            border-radius: 5px; font-size: 16px;
+        }
+        .success {
+            color: green; text-align: center; margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <form method="POST" action="/daftar">
+        <h2>📋 Form Pendaftaran Petani</h2>
+
+        {% if success %}
+            <p class="success">✅ Pendaftaran berhasil!</p>
+        {% endif %}
+        
+        {% if error %}
+            <div style="color: red; text-align: center; margin-bottom: 15px;">{{ error }}</div>
+        {% endif %}
+
+        <label>Nama Lengkap</label>
+        <input type="text" name="name" placeholder="Masukkan nama lengkap" required>
+
+        <label>Email</label>
+        <input type="email" name="email" placeholder="Contoh: petani@gmail.com" required>
+
+        <label>No. HP / WhatsApp</label>
+        <input type="text" name="phone" placeholder="Contoh: 08123456789" required>
+
+        <label>Provinsi</label>
+        <select name="province" required>
+            <option value="">-- Pilih Provinsi --</option>
+            <option>Jawa Barat</option>
+            <option>Jawa Tengah</option>
+            <option>Jawa Timur</option>
+            <option>Sumatera Utara</option>
+            <option>Kalimantan Selatan</option>
+            <!-- Tambah provinsi lain sesuai kebutuhan -->
+        </select>
+
+        <label>Kabupaten/Kota</label>
+        <input type="text" name="district" placeholder="Contoh: Cirebon" required>
+
+        <label>Alamat Lengkap</label>
+        <textarea name="address" rows="3" placeholder="Dusun, Desa, RT/RW..." required></textarea>
+
+        <label>Password</label>
+        <input type="password" name="password" placeholder="Masukkan kata sandi" required>
+
+        <button type="submit">📝 Daftar Sekarang</button>
+    </form>
+    
+
+</body>
+</html>

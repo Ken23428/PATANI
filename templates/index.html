@@ -13,6 +13,9 @@
         <div id="chat-header">
             <h1>Penyuluh Pertanian Digital 🌱</h1>
             <p>Chatbot berbasis RAG dengan data paper pertanian Indonesia.</p>
+
+            <!-- ✅ Tombol Ajukan Pengaduan -->
+            <a href="{{ url_for('form_pengaduan') }}" class="btn-pengaduan">📢 Ajukan Pengaduan</a>
         </div>
         <div id="chat-messages">
             <div class="message bot-message">
@@ -115,5 +118,13 @@
             return messageElement;
         }
     </script>
+
+    <div id="navbar">
+        <span>👤 {{ user }}</span>
+        <a href="{{ url_for('logout') }}" class="logout-button">🚪 Logout</a>
+    </div>
+
+
+
 </body>
 </html>

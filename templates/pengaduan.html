@@ -1,0 +1,33 @@
+<!-- === FILE: templates/pengaduan.html === -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Form Pengaduan Petani</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <h2>Form Pengaduan Petani</h2>
+  {% if error %}<p style="color:red">{{ error }}</p>{% endif %}
+  {% if success %}<p style="color:green">Pengaduan berhasil dikirim.</p>{% endif %}
+
+  <form method="POST">
+    <label for="village">Desa:</label>
+    <input type="text" name="village" required><br>
+
+    <label for="subdistrict">Kecamatan:</label>
+    <input type="text" name="subdistrict" required><br>
+
+    <label for="regency">Kabupaten:</label>
+    <input type="text" name="regency" required><br>
+
+    <label for="message">Isi Pengaduan:</label><br>
+    <textarea name="message" rows="4" cols="50" required></textarea><br>
+
+    <button type="submit">Kirim Pengaduan</button>
+  </form>
+
+  <br>
+  <a href="/index">Kembali</a>
+</body>
+</html>
