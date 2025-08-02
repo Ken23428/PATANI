@@ -1,9 +1,8 @@
-/* static/style.css */
+/* Optimized CSS for better performance */
 
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
-
+/* Use system fonts for faster loading */
 body {
-    font-family: 'Roboto', sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     background-color: #f0f2f5;
     display: flex;
     justify-content: center;
@@ -11,8 +10,10 @@ body {
     height: 100vh;
     margin: 0;
     color: #333;
+    line-height: 1.6;
 }
 
+/* Optimize chat window with better performance */
 #chat-window {
     width: 90%;
     max-width: 800px;
@@ -23,6 +24,7 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    will-change: transform; /* Optimize for animations */
 }
 
 #chat-header {
@@ -30,11 +32,22 @@ body {
     color: white;
     padding: 16px 24px;
     text-align: center;
+    flex-shrink: 0; /* Prevent shrinking */
 }
 
-#chat-header h1 { margin: 0; font-size: 1.5rem; }
-#chat-header p { margin: 4px 0 0; font-size: 0.9rem; opacity: 0.9; }
+#chat-header h1 { 
+    margin: 0; 
+    font-size: 1.5rem; 
+    font-weight: 600;
+}
 
+#chat-header p { 
+    margin: 4px 0 0; 
+    font-size: 0.9rem; 
+    opacity: 0.9; 
+}
+
+/* Optimize message container */
 #chat-messages {
     flex-grow: 1;
     padding: 24px;
@@ -42,90 +55,227 @@ body {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    scroll-behavior: smooth; /* Smooth scrolling */
 }
 
+/* Optimize messages with better performance */
 .message {
     max-width: 80%;
     padding: 10px 15px;
     border-radius: 18px;
     line-height: 1.5;
     word-wrap: break-word;
+    word-break: break-word; /* Better word breaking */
+    hyphens: auto; /* Automatic hyphenation */
 }
 
 .message p, .message h1, .message h2, .message h3, .message ul, .message ol {
     margin-top: 0;
     margin-bottom: 0.5em;
 }
-.message ul, .message ol { padding-left: 20px; }
+
+.message ul, .message ol { 
+    padding-left: 20px; 
+}
 
 .bot-message {
     background-color: #E8F5E9;
     align-self: flex-start;
     border-bottom-left-radius: 4px;
 }
+
 .user-message {
     background-color: #DCF8C6;
     align-self: flex-end;
     border-bottom-right-radius: 4px;
 }
 
-.loading p { animation: blink 1.5s infinite; }
-@keyframes blink { 50% { opacity: 0.5; } }
+/* Optimize loading animation */
+.loading p { 
+    animation: blink 1.5s infinite; 
+}
 
-/* STYLING BARU UNTUK SUMBER */
+@keyframes blink { 
+    50% { 
+        opacity: 0.5; 
+    } 
+}
+
+/* Optimize source container */
 .source-container {
     margin-top: 15px;
     padding-top: 10px;
     border-top: 1px solid #d4e3d5;
 }
+
 .source-container h4 {
     margin: 0 0 8px 0;
     font-size: 0.9rem;
     font-weight: 700;
     color: #2E7D32;
 }
+
 .source-container ul {
     margin: 0;
     padding-left: 20px;
-    list-style-type: '📄'; /* Emoji sebagai bullet point */
+    list-style-type: '📄';
     font-size: 0.85rem;
 }
+
 .source-container li {
     margin-bottom: 5px;
 }
+
 .source-container a {
     color: #1565C0;
     text-decoration: none;
+    transition: color 0.2s ease; /* Smooth color transition */
 }
+
 .source-container a:hover {
+    color: #0d47a1;
     text-decoration: underline;
 }
 
+/* Optimize input container */
 #chat-input-container {
-    border-top: 1px solid #ddd;
-    padding: 16px;
-    background-color: #f9f9f9;
+    padding: 16px 24px;
+    background-color: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+    flex-shrink: 0; /* Prevent shrinking */
 }
 
 #chat-form {
     display: flex;
-    gap: 10px;
+    gap: 12px;
 }
+
 #user-input {
     flex-grow: 1;
-    border: 1px solid #ccc;
-    border-radius: 20px;
-    padding: 10px 15px;
-    font-size: 1rem;
+    padding: 12px 16px;
+    border: 1px solid #ddd;
+    border-radius: 24px;
+    font-size: 14px;
     outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
+
+#user-input:focus {
+    border-color: #2E7D32;
+    box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
+}
+
 #chat-form button {
-    background-color: #4CAF50;
+    padding: 12px 24px;
+    background-color: #2E7D32;
     color: white;
     border: none;
-    padding: 10px 20px;
-    border-radius: 20px;
+    border-radius: 24px;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color 0.2s ease, transform 0.1s ease;
 }
-#chat-form button:hover { background-color: #45a049; }
+
+#chat-form button:hover { 
+    background-color: #1b5e20; 
+    transform: translateY(-1px);
+}
+
+#chat-form button:active {
+    transform: translateY(0);
+}
+
+/* Optimize buttons */
+.btn-pengaduan, .btn-riwayat-pengaduan {
+    display: inline-block;
+    padding: 8px 16px;
+    margin: 8px 4px;
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    text-decoration: none;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn-pengaduan:hover, .btn-riwayat-pengaduan:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+/* Responsive design optimizations */
+@media (max-width: 768px) {
+    #chat-window {
+        width: 95%;
+        height: 95vh;
+    }
+    
+    #chat-header {
+        padding: 12px 16px;
+    }
+    
+    #chat-header h1 {
+        font-size: 1.3rem;
+    }
+    
+    #chat-messages {
+        padding: 16px;
+    }
+    
+    .message {
+        max-width: 90%;
+    }
+    
+    #chat-input-container {
+        padding: 12px 16px;
+    }
+    
+    #user-input {
+        padding: 10px 14px;
+    }
+    
+    #chat-form button {
+        padding: 10px 20px;
+    }
+}
+
+/* Print styles for better accessibility */
+@media print {
+    #chat-input-container {
+        display: none;
+    }
+    
+    #chat-window {
+        box-shadow: none;
+        border: 1px solid #ccc;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .bot-message {
+        background-color: #000;
+        color: #fff;
+    }
+    
+    .user-message {
+        background-color: #333;
+        color: #fff;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .loading p {
+        animation: none;
+    }
+    
+    #chat-messages {
+        scroll-behavior: auto;
+    }
+    
+    .message, #chat-form button, .btn-pengaduan, .btn-riwayat-pengaduan {
+        transition: none;
+    }
+}

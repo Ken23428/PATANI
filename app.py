@@ -1,12 +1,12 @@
 import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_caching import Cache
+from flask_compress import Compress
 from routes.routes import register_routes
 from routes.rag_core import initialize_rag_system
 from routes.config import SECRET_KEY, SQLALCHEMY_DATABASE_URI, SQLALCHEMY_TRACK_MODIFICATIONS
 from routes.routes import UPLOAD_FOLDER
-
-
 
 # --- Inisialisasi Aplikasi ---
 app = Flask(__name__)
@@ -16,6 +16,14 @@ app.config['SECRET_KEY'] = SECRET_KEY
 app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = SQLALCHEMY_TRACK_MODIFICATIONS
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# --- Konfigurasi Cache ---
+app.config['CACHE_TYPE'] = 'simple'  # Use Redis in production
+app.config['CACHE_DEFAULT_TIMEOUT'] = 300  # 5 minutes
+cache = Cache(app)
+
+# --- Konfigurasi Compression ---
+Compress(app)
 
 # --- Inisialisasi SQLAlchemy ---
 from routes.models import db  # Impor db dari routes/models.py

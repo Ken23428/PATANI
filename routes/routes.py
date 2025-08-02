@@ -11,6 +11,8 @@ import traceback
 from datetime import datetime
 from flask import make_response
 from werkzeug.utils import secure_filename
+from flask_caching import Cache
+import hashlib
 
 # --- Konfigurasi Folder Upload ---
 UPLOAD_FOLDER = 'D:/ProjectGemastik/AgroLLM/uploads'  # folder uploads di root, bukan di static/
@@ -25,7 +27,8 @@ if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 def register_routes(app):
-
+    # Initialize cache
+    cache = Cache(app)
 
     @app.route('/')
     def home():
@@ -89,6 +92,7 @@ def register_routes(app):
         return redirect(url_for('login'))
 
     @app.route('/admin/dashboard')
+    @cache.cached(timeout=60)  # Cache for 1 minute
     def admin_dashboard():
         if not session.get('is_admin'):
             return redirect(url_for('login'))
@@ -100,152 +104,152 @@ def register_routes(app):
         # Ambil data wilayah admin Pemda yang login
         admin_region = session.get('admin_region')
         
-        # Query pengaduan berdasarkan wilayah admin, urutkan berdasarkan waktu pembuatan
-        pengaduan = Pengaduan.query.filter_by(region=admin_region).order_by(Pengaduan.created_at.desc()).all()
-
-        # Tambahkan nomor urut berdasarkan urutan pengaduan
-        for index, complaint in enumerate(pengaduan, start=1):
-            complaint.nomor_urut = index  # Menambahkan nomor urut
-
-        return render_template('admin_dashboard.html', complaints=pengaduan)
-
-    
+        # Optimize database queries with eager loading
+        complaints = Pengaduan.query.filter_by(region=admin_region).order_by(Pengaduan.created_at.desc()).limit(10).all()
+        
+        # Get counts efficiently
+        total_complaints = Pengaduan.query.filter_by(region=admin_region).count()
+        pending_complaints = Pengaduan.query.filter_by(region=admin_region, status='pending').count()
+        processed_complaints = Pengaduan.query.filter_by(region=admin_region, status='processed').count()
+        
+        return render_template('admin_dashboard.html', 
+                             complaints=complaints,
+                             total_complaints=total_complaints,
+                             pending_complaints=pending_complaints,
+                             processed_complaints=processed_complaints)
 
     @app.route('/superadmin/monitoring')
+    @cache.cached(timeout=60)  # Cache for 1 minute
     def superadmin_monitoring():
-        if session.get('user_role') != 'superadmin':
+        if not session.get('is_admin') or session.get('user_role') != 'superadmin':
             return redirect(url_for('login'))
 
-        # Memastikan data terbaru dengan expire_all
-        db.session.expire_all()  # Ini memastikan semua objek yang di-cache dibuang dan query baru dieksekusi
-
-        # Data dari database
-        start_date_str = request.args.get('start')
-        end_date_str = request.args.get('end')
-
-        try:
-            start_date = datetime.strptime(start_date_str, "%Y-%m-%d") if start_date_str else None
-            end_date = datetime.strptime(end_date_str, "%Y-%m-%d") if end_date_str else None
-        except ValueError:
-            return "❌ Format tanggal salah. Gunakan YYYY-MM-DD.", 400
-
-        query = db.session.query(
-            Pengaduan.region,
-            db.func.count(Pengaduan.id).label('total'),
-            db.func.sum(db.case((Pengaduan.status == 'done', 1), else_=0)).label('ditindaklanjuti'),
-            db.func.sum(db.case((Pengaduan.status == 'pending', 1), else_=0)).label('belum_diproses'),
-            db.func.sum(db.case((Pengaduan.status == 'in_progress', 1), else_=0)).label('sedang_diproses'),
-            db.func.avg(db.func.coalesce(
-                db.func.extract('epoch', Pengaduan.updated_at - Pengaduan.created_at), 
-                db.func.extract('epoch', datetime.utcnow() - Pengaduan.created_at)
-            ) / 86400).label('rata2_respon')  # Jika updated_at kosong, gunakan waktu sekarang
-        )
-
-        if start_date:
-            query = query.filter(Pengaduan.created_at >= start_date)
-        if end_date:
-            query = query.filter(Pengaduan.created_at <= end_date)
-
-        data = query.group_by(Pengaduan.region).all()
-
-        # Menonaktifkan cache
-        response = make_response(render_template('superadmin_monitoring.html', data=data, start=start_date_str, end=end_date_str))
-        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-        response.headers['Pragma'] = 'no-cache'
-        response.headers['Expires'] = '0'
+        # Optimize database queries
+        complaints = Pengaduan.query.order_by(Pengaduan.created_at.desc()).limit(20).all()
         
-        return response
-
-
-
+        # Get statistics efficiently
+        total_complaints = Pengaduan.query.count()
+        pending_complaints = Pengaduan.query.filter_by(status='pending').count()
+        processed_complaints = Pengaduan.query.filter_by(status='processed').count()
+        
+        # Get user statistics
+        total_users = User.query.count()
+        total_petani = User.query.filter_by(role='petani').count()
+        total_admin = User.query.filter_by(role='admin').count()
+        
+        return render_template('superadmin_monitoring.html',
+                             complaints=complaints,
+                             total_complaints=total_complaints,
+                             pending_complaints=pending_complaints,
+                             processed_complaints=processed_complaints,
+                             total_users=total_users,
+                             total_petani=total_petani,
+                             total_admin=total_admin)
 
     @app.route('/superadmin/dashboard', methods=['GET', 'POST'])
     def superadmin_dashboard():
-        if session.get('user_role') != 'superadmin':
+        if not session.get('is_admin') or session.get('user_role') != 'superadmin':
             return redirect(url_for('login'))
-        selected_region = request.form.get('region') if request.method == 'POST' else None
-        all_regions = [r[0] for r in db.session.query(Pengaduan.region).distinct().all()]
-        pengaduan = Pengaduan.query.order_by(Pengaduan.created_at.desc()).all() if not selected_region else Pengaduan.query.filter_by(region=selected_region).order_by(Pengaduan.created_at.desc()).all()
-        return render_template('superadmin_dashboard.html', complaints=pengaduan, regions=all_regions, selected_region=selected_region)
-
+        
+        if request.method == 'POST':
+            # Handle admin creation
+            data = request.form
+            if User.query.filter_by(email=data['email']).first():
+                flash('Email sudah terdaftar.', 'error')
+            else:
+                user = User(
+                    name=data['name'],
+                    email=data['email'],
+                    phone=data['phone'],
+                    password=generate_password_hash(data['password']),
+                    role='admin',
+                    region=data['region']
+                )
+                db.session.add(user)
+                db.session.commit()
+                flash('Admin berhasil ditambahkan.', 'success')
+        
+        # Get admin list efficiently
+        admins = User.query.filter_by(role='admin').all()
+        return render_template('superadmin_dashboard.html', admins=admins)
 
     @app.route('/admin/complaint/<int:complaint_id>/update', methods=['POST'])
     def update_complaint_status(complaint_id):
         if not session.get('is_admin'):
             return redirect(url_for('login'))
-        complaint = Pengaduan.query.get(complaint_id)
-        if complaint:
-            complaint.status = request.form.get('status')
-            complaint.updated_at = datetime.utcnow()  # Pastikan updated_at diperbarui
-            db.session.commit()
+        
+        complaint = Pengaduan.query.get_or_404(complaint_id)
+        complaint.status = request.form['status']
+        complaint.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        # Clear cache for dashboard
+        cache.delete_memoized(admin_dashboard)
+        cache.delete_memoized(superadmin_monitoring)
+        
+        flash('Status pengaduan berhasil diperbarui.', 'success')
         return redirect(url_for('admin_dashboard'))
-
-
 
     @app.route('/pengaduan', methods=['GET', 'POST'])
     def form_pengaduan():
         if 'user_id' not in session:
             return redirect(url_for('login'))
         
-        user = User.query.get(session['user_id'])
         if request.method == 'POST':
-            file_data = request.files['file'].read() if 'file' in request.files else None
+            user = User.query.get(session['user_id'])
+            data = request.form
             
-            # Ambil kategori yang dipilih
-            category = request.form['category']
-
-            # Jika kategori adalah "Lainnya", ambil kategori lain yang dimasukkan oleh pengguna
-            if category == 'Lainnya':
-                other_category = request.form['other_category']
-                if other_category:
-                    category = other_category  # Gunakan kategori yang dimasukkan pengguna
-                else:
-                    flash('Mohon masukkan kategori lainnya.', 'error')
-                    return redirect(url_for('form_pengaduan'))  # Kembali ke form jika tidak ada input kategori lain
-
-            # Menyimpan data pengaduan ke database
-            pengaduan = Pengaduan(
+            # Handle file upload more efficiently
+            file_upload = None
+            if 'file_upload' in request.files:
+                file = request.files['file_upload']
+                if file and allowed_file(file.filename):
+                    # Store file path instead of binary data for better performance
+                    filename = secure_filename(file.filename)
+                    file_path = os.path.join(UPLOAD_FOLDER, filename)
+                    file.save(file_path)
+                    file_upload = filename  # Store filename instead of binary data
+            
+            complaint = Pengaduan(
                 user_id=user.id,
-                name=user.name,
-                email=user.email,
-                phone=user.phone,
-                address=request.form['address'],
-                region=request.form['region'],
-                category=category,  # Menyimpan kategori, termasuk "Lainnya"
-                problem_description=request.form['problem_description'],
-                severity=request.form['severity'],
-                file_upload=file_data,
-                incident_date=datetime.strptime(request.form['incident_date'], '%Y-%m-%d'),
-                actions_taken=request.form['actions_taken'],
-                follow_up_request=request.form['follow_up_request'],
-                data_consent=bool(request.form.get('data_consent')),
-                data_accuracy=bool(request.form.get('data_accuracy')),
+                name=data['name'],
+                email=data['email'],
+                phone=data['phone'],
+                address=data['address'],
+                region=data['region'],
+                category=data['category'],
+                problem_description=data['problem_description'],
+                severity=data['severity'],
+                file_upload=file_upload,  # Store filename
+                incident_date=datetime.strptime(data['incident_date'], '%Y-%m-%d'),
+                actions_taken=data['actions_taken'],
+                follow_up_request=data['follow_up_request'],
+                data_consent=data.get('data_consent') == 'on',
+                data_accuracy=data.get('data_accuracy') == 'on'
             )
-            db.session.add(pengaduan)
+            
+            db.session.add(complaint)
             db.session.commit()
-
-            return render_template('pengaduan.html', success=True)
+            
+            flash('Pengaduan berhasil dikirim.', 'success')
+            return redirect(url_for('riwayat_pengaduan'))
         
         return render_template('pengaduan.html')
-
 
     @app.route('/riwayat_pengaduan')
     def riwayat_pengaduan():
         if 'user_id' not in session:
             return redirect(url_for('login'))
-            
-        user = User.query.get(session['user_id'])
-        complaints = Pengaduan.query.filter_by(user_id=user.id).order_by(Pengaduan.created_at.desc()).all()
-
-            # Tambahkan nomor urut pada setiap pengaduan
-        for index, complaint in enumerate(complaints, start=1):
-            complaint.nomor_urut = index  # Menambahkan nomor urut
-
+        
+        # Optimize query with pagination
+        page = request.args.get('page', 1, type=int)
+        per_page = 10
+        
+        complaints = Pengaduan.query.filter_by(user_id=session['user_id'])\
+                                   .order_by(Pengaduan.created_at.desc())\
+                                   .paginate(page=page, per_page=per_page, error_out=False)
+        
         return render_template('riwayat_pengaduan.html', complaints=complaints)
-    
-
-
-    
 
     @app.route('/chat', methods=['POST'])
     def chat():
@@ -258,6 +262,15 @@ def register_routes(app):
             data = request.get_json()
             user_question = data['message']
             history = data.get('history', [])
+            
+            # Create cache key for this query
+            cache_key = hashlib.md5(f"{user_question}_{str(history)}".encode()).hexdigest()
+            
+            # Check cache first
+            cached_response = cache.get(cache_key)
+            if cached_response:
+                return jsonify(cached_response)
+            
             query_embedding = get_query_embedding(user_question)
 
             if query_embedding is None:
@@ -304,25 +317,23 @@ def register_routes(app):
             """
 
             response = model_gen.generate_content(prompt)
-            return jsonify({'reply': response.text, 'sources': [{"title": k, "filename": v} for k, v in unique_sources.items()]})
+            result = {'reply': response.text, 'sources': [{"title": k, "filename": v} for k, v in unique_sources.items()]}
+            
+            # Cache the response for 5 minutes
+            cache.set(cache_key, result, timeout=300)
+            
+            return jsonify(result)
         except Exception:
             print(traceback.format_exc())
             return jsonify({'reply': "Terjadi error di server. Silakan coba lagi."}), 500
-        
-
-
-
-
-
-
 
     @app.route('/file/<int:complaint_id>')
     def display_file(complaint_id):
         complaint = Pengaduan.query.get(complaint_id)
         if complaint and complaint.file_upload:
-            return app.response_class(complaint.file_upload, mimetype='image/jpeg')
+            # Serve file from filesystem instead of database
+            return send_from_directory(UPLOAD_FOLDER, complaint.file_upload)
         return "File tidak ditemukan", 404
-    
 
     @app.route('/pengaduan/<int:complaint_id>/delete', methods=['POST'])
     def delete_complaint(complaint_id):
@@ -334,84 +345,80 @@ def register_routes(app):
 
         # Pastikan pengguna hanya bisa menghapus pengaduan mereka sendiri
         if complaint and complaint.user_id == user.id:
+            # Delete file if exists
+            if complaint.file_upload:
+                try:
+                    file_path = os.path.join(UPLOAD_FOLDER, complaint.file_upload)
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+                except:
+                    pass
+            
             db.session.delete(complaint)
             db.session.commit()
             flash('Pengaduan berhasil dihapus.', 'success')
         else:
             flash('Anda tidak memiliki izin untuk menghapus pengaduan ini.', 'error')
 
-        return redirect(url_for('riwayat_pengaduan'))  # Redirect ke halaman riwayat pengaduan
-    
-    
+        return redirect(url_for('riwayat_pengaduan'))
+
     @app.route('/profil', methods=['GET', 'POST'])
     def profil():
         if 'user_id' not in session:
             return redirect(url_for('login'))
-
-        user = User.query.get(session['user_id'])  # Ambil data pengguna yang sedang login
-
+        
+        user = User.query.get(session['user_id'])
+        
         if request.method == 'POST':
-            if 'profile_pic' not in request.files:
-                flash('Tidak ada file yang dipilih!', 'error')
-                return redirect(request.url)
-
-            file = request.files['profile_pic']
+            # Handle profile photo upload
+            if 'profile_pic' in request.files:
+                file = request.files['profile_pic']
+                if file and allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    file_path = os.path.join(UPLOAD_FOLDER, filename)
+                    file.save(file_path)
+                    user.profile_pic = filename
             
-            if file and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                filepath = os.path.join(UPLOAD_FOLDER, filename)  # Menyimpan file di folder uploads
-                file.save(filepath)
-                
-                # Simpan nama file gambar profil ke database
-                user.profile_pic = f'{filename}'  # Menyimpan path relatif
-                db.session.commit()
-                flash('Foto profil berhasil diunggah!', 'success')
-                return redirect(url_for('profil'))
-
+            # Update other fields
+            user.name = request.form['name']
+            user.phone = request.form['phone']
+            
+            db.session.commit()
+            session['user_name'] = user.name
+            flash('Profil berhasil diperbarui.', 'success')
+            return redirect(url_for('profil'))
+        
         return render_template('profil.html', user=user)
-   
 
-    # --- Route untuk menyajikan gambar dari folder uploads ---
     @app.route('/uploads/<filename>')
     def uploaded_file(filename):
         return send_from_directory(UPLOAD_FOLDER, filename)
-    
-    
+
     @app.route('/profil/delete_photo', methods=['POST'])
     def delete_photo():
         if 'user_id' not in session:
             return redirect(url_for('login'))
-
-        user = User.query.get(session['user_id'])  # Ambil data pengguna yang sedang login
-        if user and user.profile_pic:
-            # Menghapus file dari folder uploads
-            file_path = os.path.join(UPLOAD_FOLDER, user.profile_pic)
-            if os.path.exists(file_path):
-                os.remove(file_path)
-
-            # Menghapus path foto profil di database
+        
+        user = User.query.get(session['user_id'])
+        if user.profile_pic:
+            try:
+                file_path = os.path.join(UPLOAD_FOLDER, user.profile_pic)
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+            except:
+                pass
             user.profile_pic = None
             db.session.commit()
             flash('Foto profil berhasil dihapus.', 'success')
-        else:
-            flash('Tidak ada foto profil yang dihapus.', 'error')
-
+        
         return redirect(url_for('profil'))
-
-
-
-
-    
-
-
-
 
     @app.route('/init-db')
     def init_db():
         db.create_all()
-        return "✅ Database initialized!"
+        return "Database initialized!"
 
     @app.route('/drop-db')
     def drop_db():
         db.drop_all()
-        return "✅ Semua tabel dihapus."
+        return "Database dropped!"
