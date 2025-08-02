@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profil Pengguna</title>
+</head>
+<body>
+
+    <h1>Profil Pengguna</h1>
+    
+    <!-- Menampilkan foto profil jika ada -->
+    <div>
+        <h3>Foto Profil</h3>
+
+        {% if user.profile_pic %}
+            <!-- Menampilkan URL gambar sebagai debug -->
+            <p>{{ url_for('uploaded_file', filename=user.profile_pic) }}</p> <!-- Debug URL -->
+            <img src="{{ url_for('uploaded_file', filename=user.profile_pic) }}" alt="Foto Profil" width="150">
+            
+            <!-- Tombol untuk menghapus foto profil -->
+            <form method="POST" action="{{ url_for('delete_photo') }}">
+                <button type="submit">Hapus Foto Profil</button>
+            </form>
+        {% else %}
+            <p>Foto profil belum diunggah.</p>
+        {% endif %}
+    </div>
+
+    <!-- Form untuk meng-upload foto profil -->
+    <form method="POST" enctype="multipart/form-data">
+        <label for="profile_pic">Pilih foto profil:</label>
+        <input type="file" name="profile_pic" accept="image/*">
+        <button type="submit">Unggah Foto Profil</button>
+    </form>
+
+    <!-- Menampilkan nama pengguna dan informasi lainnya -->
+    <div>
+        <h3>Nama: {{ user.name }}</h3>
+        <p>Email: {{ user.email }}</p>
+        <p>Role: {{ user.role }}</p>
+        <!-- Anda bisa menambahkan lebih banyak informasi pengguna di sini -->
+    </div>
+
+    <!-- Tombol kembali ke beranda -->
+    <a href="{{ url_for('index') }}">Kembali ke Beranda</a>
+
+</body>
+</html>

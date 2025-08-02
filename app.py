@@ -1,27 +1,45 @@
-# === FILE: app.py ===
-from flask import Flask, session, flash
+import os
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import check_password_hash  # ✅ Tambahan untuk autentikasi
-from routes import register_routes  # Rute dan logika utama aplikasi
+from routes.routes import register_routes
+from routes.rag_core import initialize_rag_system
+from routes.config import SECRET_KEY, SQLALCHEMY_DATABASE_URI, SQLALCHEMY_TRACK_MODIFICATIONS
+from routes.routes import UPLOAD_FOLDER
+
+
 
 # --- Inisialisasi Aplikasi ---
 app = Flask(__name__)
 
-# ✅ Secret Key untuk autentikasi session login
-app.secret_key = '7f41b1f8f1a9e0f8c9b01d985e64d1d201edb5bbf7c36b876f8bbd4e789d7a20'  # Gantilah dengan secrets.token_hex(32) untuk produksi
-
-# --- Konfigurasi Database ---
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:Gemastikusk23@localhost:5432/agrolldb'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# --- Konfigurasi Aplikasi ---
+app.config['SECRET_KEY'] = SECRET_KEY
+app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = SQLALCHEMY_TRACK_MODIFICATIONS
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # --- Inisialisasi SQLAlchemy ---
-db = SQLAlchemy(app)
+from routes.models import db  # Impor db dari routes/models.py
+db.init_app(app)
+
+# --- Membuat folder 'uploads' jika belum ada ---
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 
 # --- Registrasi Routes ---
-register_routes(app, db)
+with app.app_context():
+    register_routes(app)  # Hanya mengoper app, bukan db
+    try:
+        db.create_all()
+    except Exception as e:
+        print("⚠️ Gagal membuat tabel:", e)
+
+    # --- Inisialisasi Sistem RAG ---
+    try:
+        initialize_rag_system()
+        print("✅ RAG system berhasil diinisialisasi.")
+    except Exception as e:
+        print("⚠️ Gagal inisialisasi RAG system:", e)
 
 # --- Jalankan Aplikasi ---
 if __name__ == '__main__':
-    from routes import initialize_rag_system
-    initialize_rag_system()
     app.run(debug=True, port=5000)

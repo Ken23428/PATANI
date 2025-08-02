@@ -1,33 +1,132 @@
-<!-- === FILE: templates/pengaduan.html === -->
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <title>Form Pengaduan Petani</title>
-  <link rel="stylesheet" href="/static/style.css">
+    <meta charset="UTF-8">
+    <title>Form Pengaduan</title>
+    <script>
+        // Menyembunyikan atau menampilkan input kategori lainnya
+        document.addEventListener('DOMContentLoaded', function() {
+            var categorySelect = document.getElementById('category');
+            var otherCategoryField = document.getElementById('other-category');
+            
+            // Cek apakah kategori lainnya dipilih
+            categorySelect.addEventListener('change', function () {
+                if (categorySelect.value === 'Lainnya') {
+                    otherCategoryField.style.display = 'block';  // Tampilkan input kategori lainnya
+                } else {
+                    otherCategoryField.style.display = 'none';  // Sembunyikan input kategori lainnya
+                }
+            });
+        });
+    </script>
 </head>
 <body>
-  <h2>Form Pengaduan Petani</h2>
-  {% if error %}<p style="color:red">{{ error }}</p>{% endif %}
-  {% if success %}<p style="color:green">Pengaduan berhasil dikirim.</p>{% endif %}
+    <h2>Form Pengaduan Petani</h2>
 
-  <form method="POST">
-    <label for="village">Desa:</label>
-    <input type="text" name="village" required><br>
+    {% if success %}
+        <p style="color: green;">Pengaduan berhasil dikirim!</p>
+    {% endif %}
 
-    <label for="subdistrict">Kecamatan:</label>
-    <input type="text" name="subdistrict" required><br>
+    <form method="POST" enctype="multipart/form-data">
+        <label>Alamat Lengkap:</label><br>
+        <input type="text" name="address" required><br><br>
 
-    <label for="regency">Kabupaten:</label>
-    <input type="text" name="regency" required><br>
+        <label>Wilayah/Provinsi:</label><br>
+        <select name="region" required>
+            <option value="">-- Pilih Provinsi --</option>
+            <option value="Aceh">Aceh</option>
+            <option value="Bali">Bali</option>
+            <option value="Banten">Banten</option>
+            <option value="Bengkulu">Bengkulu</option>
+            <option value="DI Yogyakarta">DI Yogyakarta</option>
+            <option value="DKI Jakarta">DKI Jakarta</option>
+            <option value="Gorontalo">Gorontalo</option>
+            <option value="Jambi">Jambi</option>
+            <option value="Jawa Barat">Jawa Barat</option>
+            <option value="Jawa Tengah">Jawa Tengah</option>
+            <option value="Jawa Timur">Jawa Timur</option>
+            <option value="Kalimantan Barat">Kalimantan Barat</option>
+            <option value="Kalimantan Selatan">Kalimantan Selatan</option>
+            <option value="Kalimantan Tengah">Kalimantan Tengah</option>
+            <option value="Kalimantan Timur">Kalimantan Timur</option>
+            <option value="Kalimantan Utara">Kalimantan Utara</option>
+            <option value="Kepulauan Bangka Belitung">Kepulauan Bangka Belitung</option>
+            <option value="Kepulauan Riau">Kepulauan Riau</option>
+            <option value="Lampung">Lampung</option>
+            <option value="Maluku">Maluku</option>
+            <option value="Maluku Utara">Maluku Utara</option>
+            <option value="Nusa Tenggara Barat">Nusa Tenggara Barat</option>
+            <option value="Nusa Tenggara Timur">Nusa Tenggara Timur</option>
+            <option value="Papua">Papua</option>
+            <option value="Papua Barat">Papua Barat</option>
+            <option value="Riau">Riau</option>
+            <option value="Sulawesi Barat">Sulawesi Barat</option>
+            <option value="Sulawesi Selatan">Sulawesi Selatan</option>
+            <option value="Sulawesi Tengah">Sulawesi Tengah</option>
+            <option value="Sulawesi Tenggara">Sulawesi Tenggara</option>
+            <option value="Sulawesi Utara">Sulawesi Utara</option>
+            <option value="Sumatera Barat">Sumatera Barat</option>
+            <option value="Sumatera Selatan">Sumatera Selatan</option>
+            <option value="Sumatera Utara">Sumatera Utara</option>
+            <option value="Lainnya">Lainnya</option> <!-- Tambahkan opsi lainnya -->
+        </select><br><br>
 
-    <label for="message">Isi Pengaduan:</label><br>
-    <textarea name="message" rows="4" cols="50" required></textarea><br>
+        <label>Kategori Masalah:</label><br>
+        <select name="category" id="category" required>
+            <option value="">-- Pilih Kategori --</option>
+            <option value="Tanaman">Tanaman</option>
+            <option value="Hama">Hama</option>
+            <option value="Irigasi">Irigasi</option>
+            <option value="Teknologi">Teknologi</option>
+            <option value="Pupuk">Pupuk</option>
+            <option value="Lainnya">Lainnya</option> <!-- Tambahkan opsi lainnya -->
+        </select><br><br>
 
-    <button type="submit">Kirim Pengaduan</button>
-  </form>
+        <!-- Input tambahan untuk kategori lainnya -->
+        <div id="other-category" style="display:none;">
+            <label for="other_category">Kategori Lainnya:</label><br>
+            <input type="text" name="other_category" id="other_category" placeholder="Tulis kategori lainnya..." /><br><br>
+        </div>
 
-  <br>
-  <a href="/index">Kembali</a>
+        <label>Deskripsi Masalah:</label><br>
+        <textarea name="problem_description" rows="4" required></textarea><br><br>
+
+        <label>Tingkat Keparahan:</label><br>
+        <select name="severity" required>
+            <option value="">-- Pilih Tingkat --</option>
+            <option value="Ringan">Ringan</option>
+            <option value="Sedang">Sedang</option>
+            <option value="Parah">Parah</option>
+        </select><br><br>
+
+        <label>Unggah Bukti (opsional):</label><br>
+        <input type="file" name="file" accept="image/*,video/*"><br><br>
+
+        <label>Tanggal Kejadian:</label><br>
+        <input type="date" name="incident_date" required><br><br>
+
+        <label>Tindakan yang Sudah Dilakukan:</label><br>
+        <textarea name="actions_taken" rows="3" required></textarea><br><br>
+
+        <label>Permintaan Tindak Lanjut:</label><br>
+        <textarea name="follow_up_request" rows="3" required></textarea><br><br>
+
+        <label>
+            <input type="checkbox" name="data_consent" required>
+            Saya mengizinkan data ini digunakan untuk penanganan pengaduan.
+        </label><br>
+
+        <label>
+            <input type="checkbox" name="data_accuracy" required>
+            Saya menyatakan data ini benar sesuai keadaan di lapangan.
+        </label><br><br>
+
+        <button type="submit">Kirim Pengaduan</button><br><br>
+
+        <!-- Tombol Kembali ke halaman sebelumnya -->
+        <a href="{{ url_for('index') }}">
+            <button type="button">Kembali ke Beranda</button>
+        </a>
+    </form>
 </body>
 </html>

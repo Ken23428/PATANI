@@ -2,42 +2,103 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>📋 Dashboard Pengaduan Petani</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Dashboard Admin</title>
+    <style>
+        body {
+            font-family: sans-serif;
+        }
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logout-button {
+            padding: 6px 12px;
+            background-color: #d9534f;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .logout-button:hover {
+            background-color: #c9302c;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 16px;
+        }
+        th, td {
+            border: 1px solid #999;
+            padding: 8px;
+            vertical-align: top;
+        }
+        img {
+            max-width: 200px;
+            height: auto;
+        }
+    </style>
 </head>
 <body>
-    <h2>📋 Dashboard Pengaduan Petani</h2>
 
-    <p><a href="{{ url_for('logout') }}">🔒 Logout</a></p>
+    <div class="top-bar">
+        <h2>Dashboard Admin - Daftar Pengaduan</h2>
+        <!-- ✅ Tombol Logout -->
+        <form action="{{ url_for('logout') }}" method="get">
+            <button class="logout-button" type="submit">Logout</button>
+        </form>
+    </div>
 
     {% if complaints %}
-        <table border="1" cellpadding="8" cellspacing="0">
+        <table>
             <thead>
                 <tr>
+                    <th>No.</th> <!-- Kolom untuk nomor urut -->
                     <th>Nama</th>
-                    <th>Desa</th>
-                    <th>Pesan</th>
-                    <th>Nomor HP</th>
-                    <th>Waktu</th>
+                    <th>Email</th>
+                    <th>Telepon</th>
+                    <th>Alamat</th>
+                    <th>Wilayah</th>
+                    <th>Kategori</th>
+                    <th>Deskripsi Masalah</th>
+                    <th>Tingkat Keparahan</th>
+                    <th>Tanggal Kejadian</th>
+                    <th>Tindakan yang Telah Diambil</th>
+                    <th>Permintaan Tindak Lanjut</th>
+                    <th>Bukti / File</th>
                     <th>Status</th>
-                    <th>Aksi</th>
+                    <th>Update Status</th>
                 </tr>
             </thead>
             <tbody>
-                {% for c in complaints %}
+                {% for p in complaints %}
                     <tr>
-                        <td>{{ c.user.name }}</td>
-                        <td>{{ c.village }}, Kec. {{ c.subdistrict }}, Kab. {{ c.regency }}</td>
-                        <td>{{ c.message }}</td>
-                        <td>{{ c.user.phone }}</td>
-                        <td>{{ c.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                        <td>{{ c.status }}</td>
+                        <td>{{ p.nomor_urut }}</td>  <!-- Menampilkan nomor urut -->
+                        <td>{{ p.name }}</td>
+                        <td>{{ p.email }}</td>
+                        <td>{{ p.phone }}</td>
+                        <td>{{ p.address }}</td>
+                        <td>{{ p.region }}</td>
+                        <td>{{ p.category }}</td>
+                        <td>{{ p.problem_description }}</td>
+                        <td>{{ p.severity }}</td>
+                        <td>{{ p.incident_date.strftime('%d-%m-%Y') }}</td>
+                        <td>{{ p.actions_taken }}</td>
+                        <td>{{ p.follow_up_request }}</td>
                         <td>
-                            <form method="POST" action="{{ url_for('update_complaint_status', complaint_id=c.id) }}">
+                            {% if p.file_upload %}
+                                <img src="{{ url_for('display_file', complaint_id=p.id) }}" alt="Lampiran Gambar">
+                            {% else %}
+                                Tidak ada file
+                            {% endif %}
+                        </td>
+                        <td>{{ p.status }}</td>
+                        <td>
+                            <form method="POST" action="{{ url_for('update_complaint_status', complaint_id=p.id) }}">
                                 <select name="status">
-                                    <option value="pending" {% if c.status == 'pending' %}selected{% endif %}>Pending</option>
-                                    <option value="proses" {% if c.status == 'proses' %}selected{% endif %}>Proses</option>
-                                    <option value="selesai" {% if c.status == 'selesai' %}selected{% endif %}>Selesai</option>
+                                    <option value="pending" {% if p.status == 'pending' %}selected{% endif %}>Pending</option>
+                                    <option value="in_progress" {% if p.status == 'in_progress' %}selected{% endif %}>Sedang Diproses</option>
+                                    <option value="done" {% if p.status == 'done' %}selected{% endif %}>Selesai</option>
                                 </select>
                                 <button type="submit">Update</button>
                             </form>
@@ -47,7 +108,7 @@
             </tbody>
         </table>
     {% else %}
-        <p>Tidak ada pengaduan masuk.</p>
+        <p>Tidak ada pengaduan yang masuk.</p>
     {% endif %}
 </body>
 </html>

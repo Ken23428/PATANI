@@ -2,37 +2,58 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Riwayat Pengaduan</title>
 </head>
 <body>
-    <h1>Riwayat Pengaduan Anda</h1>
+    <h2>Riwayat Pengaduan Anda</h2>
 
-    <table border="1">
-        <thead>
+    <!-- Menampilkan pesan flash jika ada -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul>
+                {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+
+    {% if complaints %}
+        <table border="1" cellpadding="5" cellspacing="0">
             <tr>
-                <th>Pesan Pengaduan</th>
-                <th>Desa</th>
-                <th>Kecamatan</th>
+                <th>No.</th>  <!-- Menampilkan nomor urut -->
+                <th>Kategori</th>
+                <th>Deskripsi</th>
+                <th>Keparahan</th>
                 <th>Status</th>
-                <th>Tanggal Pengajuan</th>
+                <th>Tanggal</th>
+                <th>Aksi</th> <!-- Kolom untuk tombol hapus -->
             </tr>
-        </thead>
-        <tbody>
-            {% for complaint in complaints %}
-            <tr>
-                <td>{{ complaint.message }}</td>
-                <td>{{ complaint.village }}</td>
-                <td>{{ complaint.subdistrict }}</td>
-                <td>{{ complaint.status }}</td>
-                <td>{{ complaint.created_at }}</td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="5">Anda belum mengajukan pengaduan.</td>
-            </tr>
+            {% for p in complaints %}
+                <tr>
+                    <td>{{ p.nomor_urut }}</td>  <!-- Menampilkan nomor urut -->
+                    <td>{{ p.category }}</td>
+                    <td>{{ p.problem_description }}</td>
+                    <td>{{ p.severity }}</td>
+                    <td>{{ p.status }}</td>
+                    <td>{{ p.incident_date.strftime('%Y-%m-%d') }}</td>
+                    <td>
+                        <!-- Tombol Hapus untuk setiap pengaduan -->
+                        <form method="POST" action="{{ url_for('delete_complaint', complaint_id=p.id) }}">
+                            <button type="submit" onclick="return confirm('Apakah Anda yakin ingin menghapus pengaduan ini?');">Hapus</button>
+                        </form>
+                    </td>
+                </tr>
             {% endfor %}
-        </tbody>
-    </table>
+        </table>
+    {% else %}
+        <p>Tidak ada pengaduan yang ditemukan.</p>
+    {% endif %}
+        
+    <!-- ✅ Tombol kembali ke halaman utama -->
+    <br><br>
+    <a href="{{ url_for('index') }}">
+        <button>Kembali ke Beranda</button>
+    </a>
 </body>
 </html>

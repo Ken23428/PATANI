@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard Superadmin</title>
+    <style>
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .logout-btn {
+            background-color: #d9534f;
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            text-decoration: none;
+        }
+        .logout-btn:hover {
+            background-color: #c9302c;
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <h1>📋 Dashboard Pengaduan Superadmin</h1>
+        <a href="{{ url_for('logout') }}" class="logout-btn">🚪 Logout</a>
+    </div>
+
+    <!-- 🔗 Link ke halaman monitoring -->
+    <p>
+        <a href="{{ url_for('superadmin_monitoring') }}">📈 Lihat Monitoring Daerah</a>
+    </p>
+
+    <!-- Form filter region -->
+    <form method="POST" style="margin-bottom: 20px;">
+        <label>Wilayah:</label>
+        <select name="region">
+            <option value="">-- Semua Wilayah --</option>
+            {% for region in regions %}
+                <option value="{{ region }}" {% if selected_region == region %}selected{% endif %}>{{ region }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">Filter</button>
+    </form>
+
+    <!-- Tabel pengaduan -->
+    <table border="1" cellpadding="8" cellspacing="0">
+        <tr>
+            <th>Nama</th>
+            <th>Email</th>
+            <th>Wilayah</th>
+            <th>Kategori</th>
+            <th>Status</th>
+            <th>Tanggal</th>
+        </tr>
+        {% for c in complaints %}
+        <tr>
+            <td>{{ c.name }}</td>
+            <td>{{ c.email }}</td>
+            <td>{{ c.region }}</td>
+            <td>{{ c.category }}</td>
+            <td>{{ c.status }}</td>
+            <td>{{ c.created_at.strftime('%Y-%m-%d') }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

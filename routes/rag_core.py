@@ -11,7 +11,7 @@ import threading
 # Membuat objek lokal untuk setiap thread
 thread_local = threading.local()
 
-DOWNLOAD_FOLDER = 'D:/ProjectGemastik/AgroLLM/data_nilam'
+DOWNLOAD_FOLDER = 'D:/ProjectGemastik/AgroLLM/jurnal_ilmiah'
 
 def extract_text_from_pdf(file_path):
     original_filename = os.path.basename(file_path)

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Monitoring Kinerja Admin Daerah</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+        }
+
+        .btn-kembali {
+            display: inline-block;
+            margin-bottom: 20px;
+            background-color: #337ab7;
+            color: white;
+            padding: 6px 12px;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+
+        .btn-kembali:hover {
+            background-color: #286090;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            text-align: center;
+        }
+
+        td {
+            text-align: center;
+        }
+
+        form label {
+            margin-right: 8px;
+        }
+
+        form input[type="date"] {
+            margin-right: 10px;
+        }
+
+        form button {
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+<body>
+    <h2>📊 Monitoring Pengaduan per Daerah</h2>
+
+    <!-- 🔙 Tombol Kembali ke Dashboard -->
+    <a href="{{ url_for('superadmin_dashboard') }}" class="btn-kembali">⬅️ Kembali ke Dashboard</a>
+
+    <!-- 🔍 Filter Tanggal -->
+    <form method="GET">
+        <label for="start">Dari tanggal:</label>
+        <input type="date" id="start" name="start" value="{{ start or '' }}">
+
+        <label for="end">Sampai tanggal:</label>
+        <input type="date" id="end" name="end" value="{{ end or '' }}">
+
+        <button type="submit">Terapkan</button>
+    </form>
+
+    <!-- 📋 Tabel Monitoring -->
+    <table>
+        <thead>
+            <tr>
+                <th>Wilayah</th>
+                <th>Total Pengaduan</th>
+                <th>Sudah Ditindaklanjuti</th>
+                <th>Sedang Diproses</th>
+                <th>Belum Diproses</th>
+                <th>Rata-rata Waktu Respon (hari)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in data %}
+                <tr>
+                    <td>{{ row[0] }}</td>  <!-- Region -->
+                    <td>{{ row[1] }}</td>  <!-- Total -->
+                    <td>{{ row[2] }}</td>  <!-- Ditindaklanjuti -->
+                    <td>{{ row[4] }}</td>  <!-- Sedang Diproses -->
+                    <td>{{ row[3] }}</td>  <!-- Belum Diproses -->
+                    <td>{{ "%.2f"|format(row[5] if row[5] is not none else 0) }}</td>  <!-- Rata-rata respon -->
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="6" align="center">Tidak ada data untuk rentang tanggal ini.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
