@@ -3,10 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Penyuluh Pertanian Digital - Chatbot berbasis RAG untuk membantu petani Indonesia">
+    <meta name="theme-color" content="#2E7D32">
     <title>Penyuluh Pertanian Digital</title>
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="{{ url_for('static', filename='style.css') }}" as="style">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/marked/marked.min.js" as="script">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js" as="script">
+    
+    <!-- Load CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+    
+    <!-- Load JavaScript with defer for better performance -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js" defer></script>
+    
+    <!-- Service Worker for caching -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => console.log('SW registered'))
+                    .catch(error => console.log('SW registration failed'));
+            });
+        }
+    </script>
 </head>
 <body>
     <h1>Selamat datang, {{ user }}!</h1>
@@ -34,55 +56,34 @@
         </div>
         <div id="chat-input-container">
             <form id="chat-form">
-                <input type="text" id="user-input" placeholder="Ketik pertanyaan Anda di sini..." autocomplete="off">
+                <input type="text" id="user-input" placeholder="Ketik pertanyaan Anda di sini..." autocomplete="off" autofocus>
                 <button type="submit">Kirim</button>
             </form>
         </div>
     </div>
 
     <script>
+        // Optimized JavaScript with better performance
         const chatForm = document.getElementById('chat-form');
         const userInput = document.getElementById('user-input');
         const chatMessages = document.getElementById('chat-messages');
         let conversationHistory = [];
+        let isProcessing = false; // Prevent multiple simultaneous requests
 
-        chatForm.addEventListener('submit', async function(event) {
-            event.preventDefault();
-            const userMessage = userInput.value.trim();
-            if (!userMessage) return;
+        // Debounce function for better performance
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
 
-            addMessage(userMessage, 'user');
-            userInput.value = '';
-            const loadingIndicator = addMessage('...', 'bot', true);
-
-            try {
-                const response = await fetch('/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: userMessage, history: conversationHistory })
-                });
-
-                loadingIndicator.remove();
-
-                if (!response.ok) {
-                    addMessage('Maaf, terjadi error saat menghubungi server.', 'bot');
-                    return;
-                }
-
-                const data = await response.json();
-                const botReply = data.reply;
-                const sources = data.sources; // Ambil daftar sumber
-                
-                // Tampilkan jawaban bot, sekarang dengan sumber
-                addMessage(botReply, 'bot', false, sources);
-                conversationHistory.push({ user: userMessage, bot: botReply });
-
-            } catch (error) {
-                loadingIndicator.remove();
-                addMessage('Tidak dapat terhubung ke server.', 'bot');
-            }
-        });
-
+        // Optimized message adding function
         function addMessage(text, sender, isLoading = false, sources = []) {
             const messageElement = document.createElement('div');
             messageElement.classList.add('message', `${sender}-message`);
@@ -91,42 +92,136 @@
                 messageElement.innerHTML = `<p>...</p>`;
                 messageElement.classList.add('loading');
             } else if (sender === 'bot') {
-                const rawHtml = marked.parse(text);
-                const sanitizedHtml = DOMPurify.sanitize(rawHtml);
-                messageElement.innerHTML = sanitizedHtml;
+                // Use marked and DOMPurify for safe HTML rendering
+                if (window.marked && window.DOMPurify) {
+                    const rawHtml = marked.parse(text);
+                    const sanitizedHtml = DOMPurify.sanitize(rawHtml);
+                    messageElement.innerHTML = sanitizedHtml;
+                } else {
+                    // Fallback for when libraries aren't loaded yet
+                    messageElement.textContent = text;
+                }
 
-                // Jika ada sumber, tambahkan sebagai daftar tautan unduhan
+                // Add sources if available
                 if (sources && sources.length > 0) {
                     const sourceContainer = document.createElement('div');
                     sourceContainer.className = 'source-container';
-                    
-                    const sourceTitle = document.createElement('h4');
-                    sourceTitle.textContent = 'Sumber Dokumen:';
-                    sourceContainer.appendChild(sourceTitle);
-
-                    const sourceList = document.createElement('ul');
-                    sources.forEach(source => {
-                        const listItem = document.createElement('li');
-                        const link = document.createElement('a');
-                        link.href = `/download/${source.filename}`;
-                        link.textContent = source.title;
-                        link.target = '_blank'; // Buka di tab baru
-                        listItem.appendChild(link);
-                        sourceList.appendChild(listItem);
-                    });
-                    sourceContainer.appendChild(sourceList);
+                    sourceContainer.innerHTML = `
+                        <h4>📄 Sumber Referensi:</h4>
+                        <ul>
+                            ${sources.map(source => `<li><strong>${source.title}</strong></li>`).join('')}
+                        </ul>
+                    `;
                     messageElement.appendChild(sourceContainer);
                 }
             } else {
-                const p = document.createElement('p');
-                p.textContent = text;
-                messageElement.appendChild(p);
+                messageElement.textContent = text;
             }
-            
+
             chatMessages.appendChild(messageElement);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Smooth scroll to bottom
+            chatMessages.scrollTo({
+                top: chatMessages.scrollHeight,
+                behavior: 'smooth'
+            });
+
             return messageElement;
         }
+
+        // Optimized form submission with debouncing
+        const debouncedSubmit = debounce(async function(userMessage) {
+            if (isProcessing) return;
+            isProcessing = true;
+
+            const loadingIndicator = addMessage('...', 'bot', true);
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ 
+                        message: userMessage, 
+                        history: conversationHistory 
+                    })
+                });
+
+                loadingIndicator.remove();
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const botReply = data.reply;
+                const sources = data.sources;
+                
+                addMessage(botReply, 'bot', false, sources);
+                conversationHistory.push({ user: userMessage, bot: botReply });
+
+            } catch (error) {
+                console.error('Chat error:', error);
+                addMessage('Maaf, terjadi error saat menghubungi server. Silakan coba lagi.', 'bot');
+            } finally {
+                isProcessing = false;
+            }
+        }, 300);
+
+        // Form submission handler
+        chatForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const userMessage = userInput.value.trim();
+            if (!userMessage || isProcessing) return;
+
+            addMessage(userMessage, 'user');
+            userInput.value = '';
+            
+            debouncedSubmit(userMessage);
+        });
+
+        // Enter key handler
+        userInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                chatForm.dispatchEvent(new Event('submit'));
+            }
+        });
+
+        // Auto-resize input for better UX
+        userInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+
+        // Focus management for better accessibility
+        userInput.addEventListener('focus', function() {
+            this.parentElement.classList.add('focused');
+        });
+
+        userInput.addEventListener('blur', function() {
+            this.parentElement.classList.remove('focused');
+        });
+
+        // Performance monitoring
+        if ('performance' in window) {
+            window.addEventListener('load', () => {
+                const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
+                console.log(`Page load time: ${loadTime}ms`);
+            });
+        }
+
+        // Error handling for better debugging
+        window.addEventListener('error', function(event) {
+            console.error('JavaScript error:', event.error);
+        });
+
+        // Unhandled promise rejection handling
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error('Unhandled promise rejection:', event.reason);
+        });
     </script>
 
     <div id="navbar">
